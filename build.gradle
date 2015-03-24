@@ -13,13 +13,11 @@ jar {
     }
 }
 
-
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile group: 'commons-collections', name: 'commons-collections', version: '3.2'
     compile('com.pi4j:pi4j-core:0.0.5') {
         exclude module: 'pi4j-native'
     }
@@ -30,7 +28,7 @@ dependencies {
 configurations { sshAntTask }
  
 dependencies { sshAntTask 'org.apache.ant:ant-jsch:1.9.2' }
- 
+
 ant.taskdef(
 	name: 'scp',
 	description: 'Secure copy file(s) to remote location',
@@ -45,11 +43,28 @@ ant.taskdef(
 	classpath: configurations.sshAntTask.asPath
 )
  
-task uploadToRaspberry(dependsOn: ':build') << {
+task uploadToRaspberry(dependsOn: ':jar') << {
 	ant.scp(
 		file: file("build/libs/raspberry-io-1.0.jar"),
-		todir: "${scp_user}@${scp_host}:~",
+		todir: "${scp_user}@${scp_host}:~/raspberry-io/raspberry-io-1.0.jar",
 		password: "${scp_password}",
 		port: "${scp_port}"
 	)
 }
+
+task copyToLib( type: Copy ) {
+    into "$buildDir/libs/lib"
+    from configurations.runtime
+}
+
+task uploadLibrariesToRaspberry(dependsOn: ':copyToLib') << {
+	for (libFile in fileTree(dir: "$buildDir/libs/lib", include: '*.jar', exclude: 'pi4j-core-*.jar')) {
+		ant.scp(
+			file: libFile,
+			todir: "${scp_user}@${scp_host}:~/raspberry-io/libs/"+libFile.name,
+			password: "${scp_password}",
+			port: "${scp_port}"
+		)
+	}
+}
+
