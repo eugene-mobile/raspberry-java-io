@@ -4,6 +4,16 @@ apply plugin: 'eclipse'
 sourceCompatibility = 1.8
 version = '1.0'
 
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Raspberry Java IO test', 
+        	'Implementation-Version': version, 
+        	'Main-Class': 'ca.appspace.pi.PirSensor'
+        
+    }
+}
+
+
 repositories {
     mavenCentral()
 }
@@ -36,9 +46,9 @@ ant.taskdef(
  
 task uploadToRaspberry(dependsOn: ':build') << {
 	ant.scp(
-		file: file("build/lib/raspberry-io-1.0.jar"),
+		file: file("build/libs/raspberry-io-1.0.jar"),
 		todir: "${scp_user}@${scp_host}:~",
 		password: "${scp_password}",
 		port: "${scp_port}"
 	)
-} 
+}
