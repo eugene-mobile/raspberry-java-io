@@ -1,6 +1,13 @@
 package ca.appspace.pi;
 
 import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.functions.Action;
+import rx.functions.Action1;
+import rx.functions.Func1;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
@@ -41,6 +48,22 @@ public class PirSensor {
         // provision gpio pin #02 as an input pin with its internal pull down resistor enabled
         final GpioPinDigitalInput pirSensorInput = gpio.provisionDigitalInputPin(PIR_SENSOR_PIN, PinPullResistance.OFF);
 
+        Observable<Boolean> pirSensorStateChanges = ObservablePinInput.observablePin(pirSensorInput);
+        
+        Observable<Integer> stateChangeCounts = pirSensorStateChanges.buffer(1, TimeUnit.MINUTES).map(new Func1<List<Boolean>, Integer>() {
+			@Override
+			public Integer call(List<Boolean> t1) {
+				System.out.println("List of state changes: "+t1);
+				return t1.size();
+			}
+		});
+        
+        stateChangeCounts.subscribe(new Action1<Integer>() {
+			@Override
+			public void call(Integer t1) {
+				System.out.println("Received state change count: "+t1);
+			}
+        });
         // create and register gpio pin listener
         pirSensorInput.addListener(new GpioPinListenerDigital() {
                 
