@@ -1,5 +1,8 @@
 package ca.appspace.pi;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +25,8 @@ import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.io.gpio.impl.PinImpl;
 
 public class PirSensor {
+    
+	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
     public static void main(String[] args) throws InterruptedException {
     	final Pin PIR_SENSOR_PIN = new PinImpl(RaspiGpioProvider.NAME, 
@@ -53,7 +58,7 @@ public class PirSensor {
         Observable<Integer> stateChangeCounts = pirSensorStateChanges.buffer(1, TimeUnit.MINUTES).map(new Func1<List<Boolean>, Integer>() {
 			@Override
 			public Integer call(List<Boolean> t1) {
-				System.out.println("List of state changes: "+t1);
+				System.out.println(DATE_FORMAT.format(new Date())+" List of state changes: "+t1);
 				return t1.size();
 			}
 		});
@@ -61,11 +66,24 @@ public class PirSensor {
         stateChangeCounts.subscribe(new Action1<Integer>() {
 			@Override
 			public void call(Integer t1) {
-				System.out.println("Received state change count: "+t1);
+				System.out.println(DATE_FORMAT.format(new Date())+" Received state change count: "+t1);
+			}
+        });
+        
+        pirSensorStateChanges.subscribe(new Action1<Boolean>() {
+			@Override
+			public void call(Boolean t1) {
+				if (t1) {
+					System.out.println(DATE_FORMAT.format(new Date())+" Received ON");
+					led2.blink(200);
+				} else {
+					System.out.println(DATE_FORMAT.format(new Date())+" Received OFF");
+					led2.blink(1000);
+				}
 			}
         });
         // create and register gpio pin listener
-        pirSensorInput.addListener(new GpioPinListenerDigital() {
+        /*pirSensorInput.addListener(new GpioPinListenerDigital() {
                 
                 public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
                     // when button is pressed, speed up the blink rate on LED #2
@@ -77,7 +95,7 @@ public class PirSensor {
                     }
                 }
             });
-
+         */
         // continuously blink the led every 1/2 second for 15 seconds
         //led1.blink(500, 15000);
 
